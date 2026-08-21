@@ -343,8 +343,9 @@
           submitBtn.disabled = true;
           submitBtn.textContent = 'Joining...';
 
-          const { data: team, error: findErr } = await sb
-            .from('teams').select('*').eq('code', code).eq('event_id', eventId).maybeSingle();
+          const { data: rows, error: findErr } = await sb
+            .rpc('find_joinable_team', { p_code: code, p_event_id: eventId });
+          const team = rows && rows[0];
 
           if (findErr || !team) {
             submitBtn.disabled = false; submitBtn.textContent = 'Join team';
@@ -358,18 +359,14 @@
             errorEl.classList.add('show');
             return;
           }
-          const { count: memberCount } = await sb
-            .from('team_members').select('id', { count: 'exact', head: true }).eq('team_id', team.id);
-          const { data: eventRow } = await sb
-            .from('events').select('team_max_size').eq('id', eventId).maybeSingle();
-          if (eventRow && eventRow.team_max_size && memberCount >= eventRow.team_max_size) {
+          if (team.team_max_size && team.member_count >= team.team_max_size) {
             submitBtn.disabled = false; submitBtn.textContent = 'Join team';
-            errorEl.textContent = `This team is already full (max ${eventRow.team_max_size} members).`;
+            errorEl.textContent = `This team is already full (max ${team.team_max_size} members).`;
             errorEl.classList.add('show');
             return;
           }
           const { data: existingMember } = await sb
-            .from('team_members').select('id').eq('team_id', team.id).eq('profile_id', user.id).maybeSingle();
+            .from('team_members').select('id').eq('team_id', team.team_id).eq('profile_id', user.id).maybeSingle();
           if (existingMember) {
             submitBtn.disabled = false; submitBtn.textContent = 'Join team';
             errorEl.textContent = "You've already joined this team.";
@@ -378,7 +375,7 @@
           }
 
           const { error: memberErr } = await sb.from('team_members')
-            .insert({ team_id: team.id, profile_id: user.id });
+            .insert({ team_id: team.team_id, profile_id: user.id });
           if (memberErr) {
             submitBtn.disabled = false; submitBtn.textContent = 'Join team';
             errorEl.textContent = memberErr.message;
@@ -386,7 +383,7 @@
             return;
           }
           const { error: regErr } = await sb.from('registrations')
-            .insert({ event_id: eventId, profile_id: user.id, team_id: team.id, status: 'pending' });
+            .insert({ event_id: eventId, profile_id: user.id, team_id: team.team_id, status: 'pending' });
           if (regErr) {
             submitBtn.disabled = false; submitBtn.textContent = 'Join team';
             errorEl.textContent = regErr.message;

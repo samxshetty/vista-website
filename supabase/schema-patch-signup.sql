@@ -64,7 +64,39 @@ as $function$
     );
 $function$;
 
--- ===================== 3. backfill, if that account already exists =====================
+-- ===================== 4. join-team-by-code lookup =====================
+-- Bug: RLS on `teams` only lets the leader or existing members SELECT a
+-- team row (see policies.sql: "team visible to its members"). Someone
+-- trying to *join* with a code isn't a member yet, so their lookup was
+-- always silently filtered to zero rows — showing "That code doesn't
+-- match a team" even with the correct code. This function looks the team
+-- up (and its live member count) as a security-definer, bypassing that
+-- restriction in a narrow, controlled way — it only returns what's
+-- needed to join, not the full row.
+
+create or replace function public.find_joinable_team(p_code text, p_event_id uuid)
+returns table(
+  team_id uuid,
+  team_name text,
+  is_finalized boolean,
+  member_count int,
+  team_max_size int
+)
+language sql
+stable security definer
+set search_path = public
+as $$
+  select
+    t.id,
+    t.team_name,
+    t.is_finalized,
+    (select count(*)::int from team_members tm where tm.team_id = t.id),
+    e.team_max_size
+  from teams t
+  join events e on e.id = t.event_id
+  where t.code = p_code and t.event_id = p_event_id;
+$$;
+
 -- Only does something if samridhshetty2007@gmail.com already has both an
 -- auth.users row and a profiles row (e.g. created manually before this
 -- patch). Harmless no-op otherwise.
