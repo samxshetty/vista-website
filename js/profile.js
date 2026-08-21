@@ -65,10 +65,6 @@
       <div class="profile-header">
         <div class="profile-avatar-wrap">
           ${avatarHtml(profile)}
-          <label class="profile-avatar-edit" title="Change avatar">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="none"><path d="M4 20h4l10-10-4-4L4 16v4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-            <input type="file" id="avatarInput" accept="image/*">
-          </label>
         </div>
         <div class="profile-heading">
           <h1>${profile.full_name || 'My Profile'}</h1>
@@ -93,9 +89,6 @@
     `;
 
     document.getElementById('editProfileBtn').addEventListener('click', () => renderEdit(profile, email, userId));
-
-    const avatarInput = document.getElementById('avatarInput');
-    avatarInput.addEventListener('change', () => handleAvatarUpload(avatarInput, profile, email, userId));
 
     const regList = document.getElementById('regList');
     const regs = await loadRegistrations(userId);
@@ -139,6 +132,18 @@
       <span class="eyebrow-label mono">Edit</span>
       <h1>My Profile</h1>
       <p class="auth-sub">${email}</p>
+
+      <div class="profile-header" style="margin:18px 0 4px;">
+        <div class="profile-avatar-wrap">
+          ${avatarHtml(profile)}
+          <label class="profile-avatar-edit" title="Change avatar">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none"><path d="M4 20h4l10-10-4-4L4 16v4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <input type="file" id="avatarInput" accept="image/*">
+          </label>
+        </div>
+      </div>
+      <p class="avatar-edit-hint">Tap the pencil to change your photo</p>
+
       <form class="auth-form" id="editProfileForm">
         <div class="form-group"><label>Full name</label><input required name="full_name" value="${profile.full_name || ''}" placeholder="Full name"></div>
         <div class="form-group"><label>USN / ID</label><input required name="usn" value="${(profile.usn && !profile.usn.startsWith('PENDING-')) ? profile.usn : ''}" placeholder="NNM23IS000"></div>
@@ -157,6 +162,9 @@
       </form>
     `;
     document.getElementById('cancelEditBtn').addEventListener('click', () => renderView(profile, email, userId));
+
+    const avatarInput = document.getElementById('avatarInput');
+    avatarInput.addEventListener('change', () => handleAvatarUpload(avatarInput, profile, email, userId));
 
     document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
       e.preventDefault();
