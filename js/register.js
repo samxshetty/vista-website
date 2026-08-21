@@ -542,6 +542,10 @@
   });
 
   (async function init() {
+    // events/index.html builds the .event-register-btn cards asynchronously
+    // from Supabase (js/events.js) — wait for that to finish first so this
+    // doesn't run against an empty grid.
+    if (window.VistaEventsReady) await window.VistaEventsReady;
     await loadEventIds();
     await VistaAuth.ready;
     await loadState();
