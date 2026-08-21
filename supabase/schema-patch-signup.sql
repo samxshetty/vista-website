@@ -26,13 +26,15 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, usn, role)
+  insert into public.profiles (id, full_name, usn, semester, section, role)
   values (
     new.id,
     '',
     -- placeholder, unique per user; register.js already knows how to spot
     -- and prompt to replace any USN starting with 'PENDING-'
     'PENDING-' || substr(new.id::text, 1, 8),
+    1,
+    '',
     case when lower(new.email) = any (array['samridhshetty2007@gmail.com'])
       then 'admin' else 'member' end
   );
