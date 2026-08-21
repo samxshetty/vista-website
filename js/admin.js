@@ -280,6 +280,7 @@
 
   let regFilterEventId = 'all';
   let regFilterStatus = 'all';
+  let regViewMode = 'grouped'; // 'grouped' (by event, default) | 'table' (flat, editable)
 
   async function loadRegistrationsTab() {
     const content = document.getElementById('adminTabContent');
@@ -291,7 +292,7 @@
     }
 
     let query = sb.from('registrations')
-      .select('id, status, registered_at, profile_id, event_id, team_id, profiles(full_name, usn, semester, section, phone), events(name, slug), teams(team_name, code, is_finalized)')
+      .select('id, status, registered_at, profile_id, event_id, team_id, profiles(full_name, usn, semester, section, phone), events(name, slug), teams(team_name, code, is_finalized, leader_id)')
       .order('registered_at', { ascending: false });
     if (regFilterEventId !== 'all') query = query.eq('event_id', regFilterEventId);
     if (regFilterStatus !== 'all') query = query.eq('status', regFilterStatus);
@@ -302,6 +303,10 @@
 
     content.innerHTML = `
       <div class="admin-toolbar">
+        <div class="admin-view-toggle">
+          <button type="button" data-view="grouped" class="${regViewMode === 'grouped' ? 'active' : ''}">By event</button>
+          <button type="button" data-view="table" class="${regViewMode === 'table' ? 'active' : ''}">Table</button>
+        </div>
         <select id="regEventFilter" class="admin-filter">
           <option value="all">All events</option>
           ${eventsCache.map(ev => `<option value="${ev.id}" ${regFilterEventId === ev.id ? 'selected' : ''}>${escapeHtml(ev.name)}</option>`).join('')}
@@ -310,9 +315,151 @@
           <option value="all" ${regFilterStatus === 'all' ? 'selected' : ''}>All statuses</option>
           <option value="pending" ${regFilterStatus === 'pending' ? 'selected' : ''}>Pending</option>
           <option value="finalized" ${regFilterStatus === 'finalized' ? 'selected' : ''}>Finalized</option>
+          <option value="cancelled" ${regFilterStatus === 'cancelled' ? 'selected' : ''}>Cancelled</option>
         </select>
         <button class="btn-secondary" id="exportRegsBtn" type="button">Export CSV</button>
       </div>
+      <div id="regViewContainer"></div>
+    `;
+
+    const container = document.getElementById('regViewContainer');
+    if (regViewMode === 'grouped') renderGroupedRegistrations(container, regs);
+    else renderTableRegistrations(container, regs);
+
+    document.querySelectorAll('.admin-view-toggle [data-view]').forEach(btn => {
+      btn.addEventListener('click', () => { regViewMode = btn.dataset.view; loadRegistrationsTab(); });
+    });
+    document.getElementById('regEventFilter').addEventListener('change', (e) => { regFilterEventId = e.target.value; loadRegistrationsTab(); });
+    document.getElementById('regStatusFilter').addEventListener('change', (e) => { regFilterStatus = e.target.value; loadRegistrationsTab(); });
+    document.getElementById('exportRegsBtn').addEventListener('click', () => {
+      exportCsv('vista-registrations.csv', regs.map(r => ({
+        event: r.events ? r.events.name : '',
+        full_name: r.profiles ? r.profiles.full_name : '',
+        usn: r.profiles ? r.profiles.usn : '',
+        semester: r.profiles ? r.profiles.semester : '',
+        section: r.profiles ? r.profiles.section : '',
+        phone: r.profiles ? (r.profiles.phone || '') : '',
+        team_name: r.teams ? r.teams.team_name : '',
+        team_code: r.teams ? r.teams.code : '',
+        is_team_leader: r.teams ? (r.teams.leader_id === r.profile_id) : '',
+        status: r.status,
+        registered_at: r.registered_at
+      })));
+    });
+  }
+
+  /* --- "By event" grouped view: counts + team rosters / solo lists --- */
+  function renderGroupedRegistrations(container, regs) {
+    // which events to show: respect the event filter, else every event that
+    // has at least one registration (or all events, so empty ones show 0 too)
+    const eventsToShow = regFilterEventId !== 'all'
+      ? eventsCache.filter(e => e.id === regFilterEventId)
+      : eventsCache;
+
+    if (!eventsToShow.length) {
+      container.innerHTML = `<p class="empty-note">No events yet.</p>`;
+      return;
+    }
+
+    container.innerHTML = eventsToShow.map(ev => {
+      const evRegs = regs.filter(r => r.event_id === ev.id);
+
+      let bodyHtml, countLabel, countNum, teamCount = null;
+
+      if (ev.is_team_event) {
+        const teamsMap = new Map();
+        const noTeam = [];
+        evRegs.forEach(r => {
+          if (r.team_id) {
+            if (!teamsMap.has(r.team_id)) teamsMap.set(r.team_id, { team: r.teams, members: [] });
+            teamsMap.get(r.team_id).members.push(r);
+          } else {
+            noTeam.push(r);
+          }
+        });
+        teamCount = teamsMap.size;
+        countNum = evRegs.length;
+        countLabel = 'Participants';
+
+        const teamCards = Array.from(teamsMap.values()).map(({ team, members }) => `
+          <div class="team-card">
+            <div class="team-card-header">
+              <div>
+                <h4>${escapeHtml(team ? team.team_name : 'Unnamed team')}<span class="mono">${team ? escapeHtml(team.code) : ''}</span></h4>
+              </div>
+              <span class="pill ${team && team.is_finalized ? 'pill-finalized' : 'pill-pending'}">${team && team.is_finalized ? 'Finalized' : 'Not finalized'}</span>
+            </div>
+            <div class="member-list">
+              ${members.map(m => `
+                <div class="member-row">
+                  <span class="member-name">
+                    ${escapeHtml(m.profiles ? m.profiles.full_name : 'Unknown')}
+                    ${team && team.leader_id === m.profile_id ? '<span class="member-leader-badge">Leader</span>' : ''}
+                  </span>
+                  <span class="member-sub">${escapeHtml(m.profiles ? m.profiles.usn : '—')} · ${m.profiles ? (m.profiles.semester + '/' + (m.profiles.section || '—')) : '—'} · ${escapeHtml(m.profiles && m.profiles.phone ? m.profiles.phone : '—')}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('');
+
+        const noTeamHtml = noTeam.length ? `
+          <div class="team-card">
+            <div class="team-card-header"><h4>Ungrouped registrations</h4></div>
+            <div class="member-list">
+              ${noTeam.map(m => `
+                <div class="member-row">
+                  <span class="member-name">${escapeHtml(m.profiles ? m.profiles.full_name : 'Unknown')}</span>
+                  <span class="member-sub">${escapeHtml(m.profiles ? m.profiles.usn : '—')}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : '';
+
+        bodyHtml = (teamCards + noTeamHtml) || `<p class="admin-empty-event">No one has registered for this event yet.</p>`;
+      } else {
+        countNum = evRegs.length;
+        countLabel = 'Registered';
+        bodyHtml = evRegs.length ? `
+          <div class="solo-list">
+            ${evRegs.map(r => `
+              <div class="member-row">
+                <span class="member-name">${escapeHtml(r.profiles ? r.profiles.full_name : 'Unknown')}</span>
+                <span class="member-sub">
+                  ${escapeHtml(r.profiles ? r.profiles.usn : '—')} · ${r.profiles ? (r.profiles.semester + '/' + (r.profiles.section || '—')) : '—'} · ${escapeHtml(r.profiles && r.profiles.phone ? r.profiles.phone : '—')}
+                  <span class="pill pill-${r.status}" style="margin-left:8px;">${escapeHtml(r.status)}</span>
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        ` : `<p class="admin-empty-event">No one has registered for this event yet.</p>`;
+      }
+
+      return `
+        <div class="event-group">
+          <div class="event-group-header">
+            <div class="event-group-title">
+              <div>
+                <h3>${escapeHtml(ev.name)}</h3>
+                <div class="event-group-meta">${escapeHtml(ev.venue || 'Venue TBA')} · ${fmtDate(ev.starts_at)}</div>
+              </div>
+              <span class="pill ${ev.is_open ? 'pill-open' : 'pill-closed'}">${ev.is_open ? 'Open' : 'Closed'}</span>
+            </div>
+            <div class="event-group-stats">
+              <div class="event-group-stat"><div class="num">${countNum}</div><div class="label">${countLabel}</div></div>
+              ${teamCount !== null ? `<div class="event-group-stat"><div class="num">${teamCount}</div><div class="label">Teams</div></div>` : ''}
+            </div>
+          </div>
+          ${bodyHtml}
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* --- flat, filterable, editable table view (status change / remove) --- */
+  function renderTableRegistrations(container, regs) {
+    container.innerHTML = `
       <div class="table-wrap">
         <table class="admin-table">
           <thead><tr>
@@ -343,23 +490,7 @@
       </div>
     `;
 
-    document.getElementById('regEventFilter').addEventListener('change', (e) => { regFilterEventId = e.target.value; loadRegistrationsTab(); });
-    document.getElementById('regStatusFilter').addEventListener('change', (e) => { regFilterStatus = e.target.value; loadRegistrationsTab(); });
-    document.getElementById('exportRegsBtn').addEventListener('click', () => {
-      exportCsv('vista-registrations.csv', regs.map(r => ({
-        event: r.events ? r.events.name : '',
-        full_name: r.profiles ? r.profiles.full_name : '',
-        usn: r.profiles ? r.profiles.usn : '',
-        semester: r.profiles ? r.profiles.semester : '',
-        section: r.profiles ? r.profiles.section : '',
-        phone: r.profiles ? (r.profiles.phone || '') : '',
-        team_name: r.teams ? r.teams.team_name : '',
-        team_code: r.teams ? r.teams.code : '',
-        status: r.status,
-        registered_at: r.registered_at
-      })));
-    });
-    content.querySelectorAll('.admin-status-select').forEach(sel => {
+    container.querySelectorAll('.admin-status-select').forEach(sel => {
       sel.addEventListener('change', async () => {
         sel.disabled = true;
         const { error } = await sb.from('registrations').update({ status: sel.value }).eq('id', sel.dataset.reg);
@@ -367,7 +498,7 @@
         if (error) alert('Failed to update status: ' + error.message);
       });
     });
-    content.querySelectorAll('[data-remove-reg]').forEach(b => {
+    container.querySelectorAll('[data-remove-reg]').forEach(b => {
       b.addEventListener('click', async () => {
         if (!confirm('Remove this registration? This cannot be undone.')) return;
         const { error } = await sb.from('registrations').delete().eq('id', b.dataset.removeReg);
