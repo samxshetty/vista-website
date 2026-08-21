@@ -13,6 +13,13 @@
   const root = document.getElementById('adminRoot');
   if (!root) return;
 
+  // Emails that always get admin access, regardless of their public.profiles
+  // role. Mirrors the same list baked into is_admin_or_coordinator() in
+  // supabase/schema-patch-signup.sql — that DB-side copy is the real
+  // security boundary, this is just so the UI doesn't show "access denied"
+  // to them first. Keep the two lists in sync.
+  const ADMIN_EMAILS = ['samridhshetty2007@gmail.com'];
+
   let activeTab = 'events';
   let eventsCache = [];      // full events list, refreshed per tab load
   let membersCache = [];
@@ -591,7 +598,8 @@
     }
     const user = VistaAuth.currentUser();
     const role = user.profile && user.profile.role;
-    if (role !== 'admin' && role !== 'coordinator') {
+    const isHardcodedAdmin = user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+    if (!isHardcodedAdmin && role !== 'admin' && role !== 'coordinator') {
       deniedView("This account doesn't have admin or coordinator access.");
       return;
     }

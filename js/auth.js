@@ -144,11 +144,24 @@ window.VistaAuth = (function () {
   };
 })();
 
-/* Login form */
+/* Login form — doubles as sign-up.
+   Flow:
+   1. Try to sign in with the given email/password.
+   2. If that fails (most likely: no account yet), and the email is an
+      @nmamit.in address, try to create the account instead.
+      - If Supabase says the account already exists, the original
+        sign-in failure really was a wrong password -> show that error.
+      - Otherwise a new account was just created -> continue to profile
+        (a public.profiles row is created automatically by a DB trigger,
+        see supabase/schema-patch-signup.sql).
+   3. Any other email domain can still sign in (existing accounts, e.g.
+      admin/coordinator accounts on non-nmamit.in addresses), it just
+      can't be used to create a brand new account. */
 (function () {
   const form = document.getElementById('loginForm');
   if (!form) return;
 
+  const NMAMIT_DOMAIN = '@nmamit.in';
   const errorEl = document.getElementById('loginError');
   const submitBtn = form.querySelector('.auth-submit');
 
@@ -166,17 +179,53 @@ window.VistaAuth = (function () {
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Logging in...';
+    submitBtn.textContent = 'Signing in...';
 
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Login';
+    let { error } = await sb.auth.signInWithPassword({ email, password });
 
     if (error) {
-      errorEl.textContent = error.message || 'Login failed. Check your email and password.';
-      errorEl.classList.add('show');
-      return;
+      const isNmamit = email.toLowerCase().endsWith(NMAMIT_DOMAIN);
+
+      if (!isNmamit) {
+        // Not an nmamit.in address and sign-in failed -> can't create an
+        // account for it, so this is just a real login failure.
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Continue';
+        errorEl.textContent = error.message || 'Login failed. Check your email and password.';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      // nmamit.in address -> try creating the account.
+      submitBtn.textContent = 'Setting up your account...';
+      const signUpResult = await sb.auth.signUp({ email, password });
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Continue';
+
+      if (signUpResult.error) {
+        const msg = (signUpResult.error.message || '').toLowerCase();
+        if (msg.includes('already') || msg.includes('registered')) {
+          // Account exists -> the original sign-in error was a wrong password.
+          errorEl.textContent = 'Incorrect password for that email.';
+        } else {
+          errorEl.textContent = signUpResult.error.message || 'Could not create your account.';
+        }
+        errorEl.classList.add('show');
+        return;
+      }
+
+      if (!signUpResult.data.session) {
+        // Project has "Confirm email" turned on, so Supabase won't hand
+        // back a session until the user clicks the confirmation link.
+        errorEl.textContent = 'Account created — check your inbox to confirm your email, then log in.';
+        errorEl.classList.add('show');
+        return;
+      }
+      // Fall through: signUp returned a live session, treat as logged in.
+    } else {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Continue';
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -185,36 +234,43 @@ window.VistaAuth = (function () {
   });
 })();
 
-/* Forgot password form */
+/* Forgot password form — no automated reset email. Instead this builds a
+   pre-filled email (via a mailto: link) from the visitor's browser to the
+   VISTA team address, who reset the password manually from the Supabase
+   dashboard. Swap RESET_REQUEST_EMAIL below if that inbox ever changes. */
 (function () {
   const form = document.getElementById('forgotForm');
   if (!form) return;
 
+  const RESET_REQUEST_EMAIL = 'nn25ise182@nmamit.in';
   const noteEl = document.getElementById('forgotNote');
   const submitBtn = form.querySelector('.auth-submit');
 
-  form.addEventListener('submit', async function (e) {
+  form.addEventListener('submit', function (e) {
     e.preventDefault();
 
+    const name = form.name.value.trim();
+    const usn = form.usn.value.trim();
     const email = form.email.value.trim();
-    if (!email) return;
+    if (!name || !usn || !email) return;
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Sending...';
+    submitBtn.textContent = 'Opening email...';
 
-    // redirectTo must be an allowed Redirect URL in Supabase ->
-    // Authentication -> URL Configuration, or Supabase will silently
-    // reject / fall back to the Site URL. This link lands the user back
-    // on the login page with a recovery session, which triggers the
-    // "set new password" form below.
-    await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/login/index.html',
-    });
+    const subject = `VISTA password reset request — ${usn}`;
+    const body =
+      `Hi VISTA team,\n\nPlease reset my VISTA account password.\n\n` +
+      `Name: ${name}\nUSN: ${usn}\nAccount email: ${email}\n\nThanks!`;
+
+    const mailtoLink =
+      `mailto:${RESET_REQUEST_EMAIL}` +
+      `?subject=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`;
+
+    window.location.href = mailtoLink;
 
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Send Reset Link';
-    // Always show the same success note whether or not the email exists —
-    // don't leak which emails are registered.
+    submitBtn.textContent = 'Send request';
     noteEl.classList.add('show');
     form.reset();
   });
