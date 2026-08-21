@@ -26,9 +26,10 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, usn, role)
+  insert into public.profiles (id, full_name, usn, role)
   values (
     new.id,
+    '',
     -- placeholder, unique per user; register.js already knows how to spot
     -- and prompt to replace any USN starting with 'PENDING-'
     'PENDING-' || substr(new.id::text, 1, 8),
