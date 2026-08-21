@@ -358,6 +358,16 @@
             errorEl.classList.add('show');
             return;
           }
+          const { count: memberCount } = await sb
+            .from('team_members').select('id', { count: 'exact', head: true }).eq('team_id', team.id);
+          const { data: eventRow } = await sb
+            .from('events').select('team_max_size').eq('id', eventId).maybeSingle();
+          if (eventRow && eventRow.team_max_size && memberCount >= eventRow.team_max_size) {
+            submitBtn.disabled = false; submitBtn.textContent = 'Join team';
+            errorEl.textContent = `This team is already full (max ${eventRow.team_max_size} members).`;
+            errorEl.classList.add('show');
+            return;
+          }
           const { data: existingMember } = await sb
             .from('team_members').select('id').eq('team_id', team.id).eq('profile_id', user.id).maybeSingle();
           if (existingMember) {
