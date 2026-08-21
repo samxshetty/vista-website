@@ -530,32 +530,33 @@
   }
 
   /* ---------- init ---------- */
-  document.querySelectorAll('.event-register-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const slug = btn.dataset.eventId;
-      const existing = state[slug];
-      if (existing) {
-        // Solo + already-finalized team registrations are done — nothing to manage.
-        if (existing.teamId && !existing.finalized) {
-          manageTeamStep(slug);
-        }
-        return;
-      }
-      const name = btn.dataset.eventName;
-      const isTeam = btn.dataset.team === 'true';
-      if (!window.VistaAuth || !VistaAuth.isLoggedIn()) {
-        loginRequiredStep(slug, name);
-        return;
-      }
-      confirmStep(slug, name, isTeam);
-    });
-  });
-
   (async function init() {
     // events/index.html builds the .event-register-btn cards asynchronously
-    // from Supabase (js/events.js) — wait for that to finish first so this
-    // doesn't run against an empty grid.
+    // from Supabase (js/events.js) — wait for that to finish first, since
+    // the buttons don't exist in the DOM until then.
     if (window.VistaEventsReady) await window.VistaEventsReady;
+
+    document.querySelectorAll('.event-register-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const slug = btn.dataset.eventId;
+        const existing = state[slug];
+        if (existing) {
+          // Solo + already-finalized team registrations are done — nothing to manage.
+          if (existing.teamId && !existing.finalized) {
+            manageTeamStep(slug);
+          }
+          return;
+        }
+        const name = btn.dataset.eventName;
+        const isTeam = btn.dataset.team === 'true';
+        if (!window.VistaAuth || !VistaAuth.isLoggedIn()) {
+          loginRequiredStep(slug, name);
+          return;
+        }
+        confirmStep(slug, name, isTeam);
+      });
+    });
+
     await loadEventIds();
     await VistaAuth.ready;
     await loadState();
