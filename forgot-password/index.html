@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gallery — VISTA</title>
+<title>Forgot Password — VISTA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
     <div class="nav-links" id="navLinks">
       <a href="../index.html">Home</a>
       <a href="../events/index.html">Events</a>
-      <a href="./index.html" class="active">Gallery</a>
+      <a href="../gallery/index.html">Gallery</a>
       <a href="../team/index.html">Team</a>
       <a href="../about/index.html">About Us</a>
     </div>
@@ -36,74 +36,39 @@
 <div class="mobile-menu" id="mobileMenu">
   <a href="../index.html">Home</a>
   <a href="../events/index.html">Events</a>
-  <a href="./index.html" class="active">Gallery</a>
+  <a href="../gallery/index.html">Gallery</a>
   <a href="../team/index.html">Team</a>
   <a href="../about/index.html">About Us</a>
 </div>
 
 <main class="page">
-  <div class="page-header">
-    <span class="eyebrow-label mono">Moments</span>
-    <h1>Gallery</h1>
-    <p>A snapshot from every event — full albums live on Drive.</p>
-  </div>
-  <div class="gallery-list">
+  <div class="auth-wrap">
+    <div class="auth-card glass reveal in">
+      <a class="auth-back" href="../login/index.html">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back to login
+      </a>
+      <span class="eyebrow-label mono">Reset access</span>
+      <h1>Forgot your password?</h1>
+      <p class="auth-sub">Enter the email linked to your account and we'll send you a link to reset your password.</p>
 
-    <div class="reveal">
-      <div class="gallery-event-head">
-        <div><h3>VISTA Premier League</h3><span class="gdate mono">March 2026</span></div>
-        <a class="drive-btn" href="#" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none"><path d="M8 3l-6 10 3 6h14l3-6-6-10z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-          Full album on Drive
-        </a>
+      <form class="auth-form" id="forgotForm" novalidate>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="you@nmamit.in" autocomplete="email" required>
+        </div>
+        <button type="submit" class="auth-submit">Send Reset Link</button>
+      </form>
+
+      <div class="auth-note" id="forgotNote">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>If an account exists for that email, a reset link is on its way. Check your inbox (and spam folder).</span>
       </div>
-      <div class="photo-row">
-        <a href="#"><img src="https://picsum.photos/seed/g1a/400/400" alt="HackVista photo"></a>
-        <a href="#"><img src="https://picsum.photos/seed/g1b/400/400" alt="HackVista photo"></a>
-        <a href="#"><img src="https://picsum.photos/seed/g1c/400/400" alt="HackVista photo"></a>
-        <a href="#"><img src="https://picsum.photos/seed/g1d/400/400" alt="HackVista photo"></a>
-      </div>
+
+      <p class="auth-switch">Remembered it? <a href="../login/index.html">Back to login</a></p>
     </div>
-
-    <div class="reveal">
-      <div class="gallery-event-head">
-        <div><h3>Vistara 25'</h3><span class="gdate mono">November 2025</span></div>
-        <a class="drive-btn" href="#" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none"><path d="M8 3l-6 10 3 6h14l3-6-6-10z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-          Full album on Drive
-        </a>
-      </div>
-      <div class="photo-row">
-        <a href="#"><img src="https://picsum.photos/seed/g2a/400/400" alt="Vista Nights photo"></a>
-        <a href="#"><img src="https://picsum.photos/seed/g2b/400/400" alt="Vista Nights photo"></a>
-        <a href="#"><img src="https://picsum.photos/seed/g2c/400/400" alt="Vista Nights photo"></a>
-        <a href="#"><img src="https://picsum.photos/seed/g2d/400/400" alt="Vista Nights photo"></a>
-      </div>
-    </div>
-
-    <div class="reveal">
-      <div class="gallery-event-head">
-        <div><h3>Freshers Day 25'</h3><span class="gdate mono">October 2025</span></div>
-        <a class="drive-btn" href="#" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none"><path d="M8 3l-6 10 3 6h14l3-6-6-10z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-          Full album on Drive
-        </a>
-      </div>
-      <div class="photo-row">
-        <a href="#"><img src="https://picsum.photos/seed/g3a/400/400" alt="Sports meet photo"></a>
-        <a href="#"><img src="https://picsum.photos/seed/g3b/400/400" alt="Sports meet photo"></a>
-        <a href="#"><img src="https://picsum.photos/seed/g3c/400/400" alt="Sports meet photo"></a>
-        <a href="#"><img src="https://picsum.photos/seed/g3d/400/400" alt="Sports meet photo"></a>
-      </div>
-    </div>
-
   </div>
 </main>
-
-<div class="lightbox" id="lightbox" aria-hidden="true">
-  <button class="lightbox-close" id="lightboxClose" aria-label="Close image">&times;</button>
-  <img id="lightboxImg" src="" alt="">
-</div>
 
 <footer>
   <div class="footer-inner">
@@ -114,7 +79,7 @@
       <a href="../index.html">Home</a>
       <a href="../about/index.html">About Us</a>
       <a href="../events/index.html">Events</a>
-      <a href="./index.html" class="active">Gallery</a>
+      <a href="../gallery/index.html">Gallery</a>
       <a href="../team/index.html">Team</a>
     </div>
     <div class="social-row">

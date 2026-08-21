@@ -7,7 +7,9 @@ document.querySelectorAll('.mobile-menu a').forEach(a=>{
 
 const root = document.documentElement;
 document.getElementById('themeToggle').addEventListener('click', ()=>{
-  root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  root.dataset.theme = next;
+  localStorage.setItem('vista_theme', next);
 });
 
 function runReveal(){

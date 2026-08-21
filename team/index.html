@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+<script>(function(){var t=localStorage.getItem('vista_theme');if(t)document.documentElement.dataset.theme=t;})();</script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,7 +28,7 @@
       <button class="icon-btn" id="themeToggle" title="Toggle theme">
         <svg id="themeIcon" viewBox="0 0 24 24" fill="none" width="17" height="17"><path d="M12 3v2M12 19v2M5 5l1.4 1.4M17.6 17.6L19 19M3 12h2M19 12h2M5 19l1.4-1.4M17.6 6.4L19 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/></svg>
       </button>
-      <button class="login-btn">Login</button>
+      <a class="login-btn" id="navLoginBtn" href="../login/index.html">Login</a>
       <button class="hamburger" id="hamburger"><span></span></button>
     </div>
   </nav>
@@ -144,6 +145,9 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
 <script src="../js/main.js"></script>
+<script src="../js/auth.js"></script>
 </body>
 </html>

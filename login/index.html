@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<script>(function(){var t=localStorage.getItem('vista_theme');if(t)document.documentElement.dataset.theme=t;})();</script>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — VISTA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+<div class="navwrap">
+  <nav>
+    <a href="../index.html" class="nav-brand">
+      <img src="../assets/images/vista-logo.png" alt="Vista logo">
+    </a>
+    <div class="nav-links" id="navLinks">
+      <a href="../index.html">Home</a>
+      <a href="../events/index.html">Events</a>
+      <a href="../gallery/index.html">Gallery</a>
+      <a href="../team/index.html">Team</a>
+      <a href="../about/index.html">About Us</a>
+    </div>
+    <div class="nav-actions">
+      <button class="icon-btn" id="themeToggle" title="Toggle theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" width="17" height="17"><path d="M12 3v2M12 19v2M5 5l1.4 1.4M17.6 17.6L19 19M3 12h2M19 12h2M5 19l1.4-1.4M17.6 6.4L19 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/></svg>
+      </button>
+      <a class="login-btn" id="navLoginBtn" href="./index.html">Login</a>
+      <button class="hamburger" id="hamburger"><span></span></button>
+    </div>
+  </nav>
+</div>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="../index.html">Home</a>
+  <a href="../events/index.html">Events</a>
+  <a href="../gallery/index.html">Gallery</a>
+  <a href="../team/index.html">Team</a>
+  <a href="../about/index.html">About Us</a>
+</div>
+
+<main class="page">
+  <div class="auth-wrap">
+    <div class="auth-card glass reveal in">
+      <span class="eyebrow-label mono">Welcome back</span>
+      <h1>Login to VISTA</h1>
+      <p class="auth-sub">Sign in with your email and password to access member features.</p>
+
+      <form class="auth-form" id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="you@nmamit.in" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <div class="auth-forgot-row">
+          <a href="../forgot-password/index.html">Forgot password?</a>
+        </div>
+        <span class="auth-error" id="loginError"></span>
+        <button type="submit" class="auth-submit">Login</button>
+      </form>
+
+      <p class="auth-switch">Don't have an account? <a href="https://www.instagram.com/vista_nmamit/">Contact VISTA to join</a></p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="../assets/images/vista-logo.png" alt="Vista logo" style="height:20px;width:auto;filter:var(--logo-filter,none);">
+    </div>
+    <div class="footer-links">
+      <a href="../index.html">Home</a>
+      <a href="../about/index.html">About Us</a>
+      <a href="../events/index.html">Events</a>
+      <a href="../gallery/index.html">Gallery</a>
+      <a href="../team/index.html">Team</a>
+    </div>
+    <div class="social-row">
+      <a class="icon-btn" href="https://www.instagram.com/vista_nmamit/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor"/></svg></a>
+      <a class="icon-btn" href="#" aria-label="Email"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M4 6l8 7 8-7" stroke="currentColor" stroke-width="1.5"/></svg></a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 VISTA — Dept. of Information Science, NMAMIT</span>
+    <span>Built by the Technical Team at VISTA</span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/auth.js"></script>
+</body>
+</html>

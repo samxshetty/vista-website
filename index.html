@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+<script>(function(){var t=localStorage.getItem('vista_theme');if(t)document.documentElement.dataset.theme=t;})();</script>
 
 <head>
   <meta charset="UTF-8">
@@ -35,7 +36,7 @@
             <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6" />
           </svg>
         </button>
-        <button class="login-btn">Login</button>
+        <a class="login-btn" id="navLoginBtn" href="./login/index.html">Login</a>
         <button class="hamburger" id="hamburger"><span></span></button>
       </div>
     </nav>
@@ -247,7 +248,10 @@
     </div>
   </footer>
 
-  <script src="./js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/supabase-client.js"></script>
+<script src="./js/main.js"></script>
+  <script src="./js/auth.js"></script>
 </body>
 
 </html>
