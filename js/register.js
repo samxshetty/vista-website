@@ -32,7 +32,7 @@
     const slugs = Array.from(document.querySelectorAll('.event-register-btn'))
       .map(b => b.dataset.eventId);
     if (!slugs.length) return;
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('events')
       .select('id, slug')
       .in('slug', slugs);
@@ -45,7 +45,7 @@
     state = {};
     if (!window.VistaAuth || !VistaAuth.isLoggedIn()) return;
     const user = VistaAuth.currentUser();
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('registrations')
       .select('event_id, status, team_id, events(slug), teams(id, code, team_name, leader_id, is_finalized)')
       .eq('profile_id', user.id);
@@ -65,7 +65,7 @@
   }
 
   async function fetchTeamMembers(teamId) {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('team_members')
       .select('profile_id, profiles(full_name, usn, semester, section)')
       .eq('team_id', teamId);
@@ -159,7 +159,7 @@
       const errorEl = document.getElementById('profileError');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Saving...';
-      const { error } = await supabase.from('profiles').update({
+      const { error } = await sb.from('profiles').update({
         full_name: fd.get('full_name').trim(),
         usn: fd.get('usn').trim(),
         semester: parseInt(fd.get('semester'), 10),
@@ -236,7 +236,7 @@
     withProfile(async () => {
       const user = VistaAuth.currentUser();
       const eventId = eventSlugToId[slug];
-      const { error } = await supabase.from('registrations').insert({
+      const { error } = await sb.from('registrations').insert({
         event_id: eventId, profile_id: user.id, status: 'finalized'
       });
       if (error) { errorModal(error.message); return; }
@@ -250,7 +250,7 @@
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // skips ambiguous chars (0/O, 1/I)
     for (let attempt = 0; attempt < 10; attempt++) {
       const code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-      const { data } = await supabase.from('teams').select('id').eq('code', code).maybeSingle();
+      const { data } = await sb.from('teams').select('id').eq('code', code).maybeSingle();
       if (!data) return code;
     }
     throw new Error('Could not generate a unique team code, please try again.');
@@ -295,15 +295,15 @@
           submitBtn.textContent = 'Creating...';
           try {
             const code = await genCode(eventId);
-            const { data: team, error: teamErr } = await supabase
+            const { data: team, error: teamErr } = await sb
               .from('teams')
               .insert({ event_id: eventId, code, team_name: teamName, leader_id: user.id })
               .select().single();
             if (teamErr) throw teamErr;
-            const { error: memberErr } = await supabase.from('team_members')
+            const { error: memberErr } = await sb.from('team_members')
               .insert({ team_id: team.id, profile_id: user.id });
             if (memberErr) throw memberErr;
-            const { error: regErr } = await supabase.from('registrations')
+            const { error: regErr } = await sb.from('registrations')
               .insert({ event_id: eventId, profile_id: user.id, team_id: team.id, status: 'pending' });
             if (regErr) throw regErr;
             await loadState();
@@ -343,7 +343,7 @@
           submitBtn.disabled = true;
           submitBtn.textContent = 'Joining...';
 
-          const { data: team, error: findErr } = await supabase
+          const { data: team, error: findErr } = await sb
             .from('teams').select('*').eq('code', code).eq('event_id', eventId).maybeSingle();
 
           if (findErr || !team) {
@@ -358,7 +358,7 @@
             errorEl.classList.add('show');
             return;
           }
-          const { data: existingMember } = await supabase
+          const { data: existingMember } = await sb
             .from('team_members').select('id').eq('team_id', team.id).eq('profile_id', user.id).maybeSingle();
           if (existingMember) {
             submitBtn.disabled = false; submitBtn.textContent = 'Join team';
@@ -367,7 +367,7 @@
             return;
           }
 
-          const { error: memberErr } = await supabase.from('team_members')
+          const { error: memberErr } = await sb.from('team_members')
             .insert({ team_id: team.id, profile_id: user.id });
           if (memberErr) {
             submitBtn.disabled = false; submitBtn.textContent = 'Join team';
@@ -375,7 +375,7 @@
             errorEl.classList.add('show');
             return;
           }
-          const { error: regErr } = await supabase.from('registrations')
+          const { error: regErr } = await sb.from('registrations')
             .insert({ event_id: eventId, profile_id: user.id, team_id: team.id, status: 'pending' });
           if (regErr) {
             submitBtn.disabled = false; submitBtn.textContent = 'Join team';
@@ -449,7 +449,7 @@
     const r = state[slug];
     if (!r || !r.teamId) return;
     const members = await fetchTeamMembers(r.teamId);
-    const { data: teamRow } = await supabase.from('teams').select('leader_id').eq('id', r.teamId).single();
+    const { data: teamRow } = await sb.from('teams').select('leader_id').eq('id', r.teamId).single();
     members.forEach(m => { m.isLeader = teamRow && m.profile_id === teamRow.leader_id; });
 
     const finalized = !!r.finalized;
@@ -491,7 +491,7 @@
     // NOTE: this calls the finalize_team() Postgres function (see the RLS
     // patch in supabase/schema-patch.sql) because a team leader isn't
     // otherwise allowed to update teammates' own registration rows.
-    const { error } = await supabase.rpc('finalize_team', { p_team_id: r.teamId });
+    const { error } = await sb.rpc('finalize_team', { p_team_id: r.teamId });
 
     if (error) {
       submitBtn.disabled = false;

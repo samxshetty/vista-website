@@ -11,9 +11,6 @@
    real Auth API instead of faking it.
    ========================================================================== */
 window.VistaAuth = (function () {
-  // Cached in-memory copy of the current Supabase session/user, kept in
-  // sync by onAuthStateChange below. Populated async — pages that need to
-  // gate on it right away should prefer the ready() promise.
   let _session = null;
 
   function isLoggedIn() {
@@ -22,31 +19,23 @@ window.VistaAuth = (function () {
 
   function currentUser() {
     if (!_session || !_session.user) return null;
-    // Keep the same shape older code expects ({ email, ... }) while also
-    // exposing the full Supabase user object for anything that needs it.
     return { email: _session.user.email, id: _session.user.id, raw: _session.user };
   }
 
-  // Resolves once we've checked Supabase for an existing session (page
-  // load / refresh). Useful if a page needs to know login state before
-  // doing anything (e.g. redirecting away from a protected page).
   function ready() {
-    return supabase.auth.getSession().then(({ data }) => {
+    return sb.auth.getSession().then(({ data }) => {
       _session = data.session;
       renderNavState();
       return _session;
     });
   }
 
-  // Kept for compatibility with any old code path — no longer used by the
-  // login form itself (which now calls supabase.auth.signInWithPassword
-  // directly), but harmless to keep around.
   function login(user) {
     renderNavState();
   }
 
   function logout() {
-    supabase.auth.signOut().then(() => {
+    sb.auth.signOut().then(() => {
       _session = null;
       renderNavState();
       window.location.href = getRootPath() + 'index.html';
@@ -74,9 +63,6 @@ window.VistaAuth = (function () {
     });
   }
 
-  // Figures out the relative path back to /login/index.html from wherever
-  // this page lives, and to the site root, based on the current login-btn's
-  // existing href (it already points at the right depth for this page).
   function getLoginHref() {
     const existing = document.querySelector('#navLoginBtn');
     if (existing && existing.dataset.loginHref) return existing.dataset.loginHref;
@@ -87,19 +73,13 @@ window.VistaAuth = (function () {
     return href.replace(/login\/index\.html$/, '');
   }
 
-  // Cache each nav button's original href (points at login page) before we
-  // start swapping it for the logout handler.
   document.querySelectorAll('#navLoginBtn').forEach(btn => {
     btn.dataset.loginHref = btn.getAttribute('href');
   });
 
-  // Check for an existing session as soon as the page loads (e.g. user
-  // already logged in from a previous visit / another tab).
   ready();
 
-  // Keep nav state (and _session) in sync on login/logout/token refresh,
-  // including when triggered from a different tab.
-  supabase.auth.onAuthStateChange((_event, session) => {
+  sb.auth.onAuthStateChange((_event, session) => {
     _session = session;
     renderNavState();
   });
@@ -131,7 +111,7 @@ window.VistaAuth = (function () {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Logging in...';
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await sb.auth.signInWithPassword({ email, password });
 
     submitBtn.disabled = false;
     submitBtn.textContent = 'Login';
@@ -165,17 +145,12 @@ window.VistaAuth = (function () {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Sending...';
 
-    // redirectTo must be an allowed Redirect URL in Supabase ->
-    // Authentication -> URL Configuration, or Supabase will silently
-    // reject / fall back to the Site URL.
-    await supabase.auth.resetPasswordForEmail(email, {
+    await sb.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + '/login/index.html',
     });
 
     submitBtn.disabled = false;
     submitBtn.textContent = 'Send Reset Link';
-    // Always show the same success note whether or not the email exists —
-    // don't leak which emails are registered.
     noteEl.classList.add('show');
     form.reset();
   });
