@@ -30,7 +30,10 @@
     const tag = ev.is_team_event
       ? `Team event · ${ev.team_min_size || 1}–${ev.team_max_size || '?'}`
       : 'Solo event';
-    const closed = !ev.is_open;
+    const status = ev.registration_status || 'upcoming';
+    const disabled = status !== 'open';
+    const btnLabel = status === 'closed' ? 'Registrations closed' : status === 'upcoming' ? 'Registrations open soon' : 'Register';
+    const btnTitle = status === 'closed' ? 'Registrations are closed for this event' : status === 'upcoming' ? 'Registrations haven\'t opened for this event yet' : '';
     return `
       <div class="event-card glass reveal">
         <div class="event-poster">
@@ -46,7 +49,7 @@
           </div>
         </div>
         <div class="event-actions">
-          <button class="event-register-btn" data-event-id="${escapeHtml(ev.slug)}" data-event-name="${escapeHtml(ev.name)}" data-team="${ev.is_team_event ? 'true' : 'false'}" ${closed ? 'disabled title="Registrations are closed for this event"' : ''}>${closed ? 'Registrations closed' : 'Register'}</button>
+          <button class="event-register-btn" data-event-id="${escapeHtml(ev.slug)}" data-event-name="${escapeHtml(ev.name)}" data-team="${ev.is_team_event ? 'true' : 'false'}" ${disabled ? `disabled title="${btnTitle}"` : ''}>${btnLabel}</button>
         </div>
       </div>
     `;

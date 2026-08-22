@@ -45,6 +45,13 @@
     return (s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
+  const STATUS_LABEL = { open: 'Open', upcoming: 'Upcoming', closed: 'Closed' };
+  const STATUS_PILL_CLASS = { open: 'pill-open', upcoming: 'pill-upcoming', closed: 'pill-closed' };
+  function statusPill(status) {
+    const s = status || 'upcoming';
+    return `<span class="pill ${STATUS_PILL_CLASS[s] || 'pill-closed'}">${STATUS_LABEL[s] || s}</span>`;
+  }
+
   /* CSV export — takes an array of plain objects (already flattened) */
   function exportCsv(filename, rows) {
     if (!rows || !rows.length) { alert('Nothing to export yet.'); return; }
@@ -135,7 +142,7 @@
       <div class="table-wrap">
         <table class="admin-table">
           <thead><tr>
-            <th>Name</th><th>Slug</th><th>Venue</th><th>Starts</th><th>Type</th><th>Status</th><th></th>
+            <th>Name</th><th>Slug</th><th>Venue</th><th>Starts</th><th>Type</th><th>Registrations</th><th></th>
           </tr></thead>
           <tbody>
             ${eventsCache.map(ev => `
@@ -145,7 +152,7 @@
                 <td>${escapeHtml(ev.venue || '—')}</td>
                 <td>${fmtDate(ev.starts_at)}</td>
                 <td>${ev.is_team_event ? `Team (${ev.team_min_size || 1}–${ev.team_max_size || '?'})` : 'Solo'}</td>
-                <td><span class="pill ${ev.is_open ? 'pill-open' : 'pill-closed'}">${ev.is_open ? 'Open' : 'Closed'}</span></td>
+                <td>${statusPill(ev.registration_status)}</td>
                 <td class="admin-row-actions">
                   <button class="btn-sm" data-edit="${ev.id}">Edit</button>
                   <button class="btn-sm btn-danger" data-delete="${ev.id}">Delete</button>
@@ -162,7 +169,8 @@
       exportCsv('vista-events.csv', eventsCache.map(ev => ({
         name: ev.name, slug: ev.slug, venue: ev.venue || '', starts_at: ev.starts_at || '',
         is_team_event: ev.is_team_event, team_min_size: ev.team_min_size || '', team_max_size: ev.team_max_size || '',
-        is_open: ev.is_open, created_at: ev.created_at
+        registration_status: ev.registration_status || '', whatsapp_link: ev.whatsapp_link || '', form_link: ev.form_link || '',
+        created_at: ev.created_at
       })));
     });
     content.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
@@ -192,8 +200,23 @@
           <div class="form-group"><label>Max team size</label><input type="number" min="1" name="team_max_size" value="${isEdit && ev.team_max_size ? ev.team_max_size : 4}"></div>
         </div>
         <div class="form-group">
-          <label><input type="checkbox" name="is_open" ${!isEdit || ev.is_open ? 'checked' : ''}> Registrations open</label>
+          <label>Registrations</label>
+          <select name="registration_status">
+            ${['open', 'upcoming', 'closed'].map(s => {
+              const current = isEdit ? (ev.registration_status || 'upcoming') : 'upcoming';
+              return `<option value="${s}" ${current === s ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`;
+            }).join('')}
+          </select>
         </div>
+        <div class="form-group">
+          <label>WhatsApp group link <span style="opacity:.6;font-weight:400;">(optional)</span></label>
+          <input name="whatsapp_link" value="${isEdit ? escapeHtml(ev.whatsapp_link || '') : ''}" placeholder="https://chat.whatsapp.com/...">
+        </div>
+        <div class="form-group">
+          <label>Form link <span style="opacity:.6;font-weight:400;">(optional, e.g. a Google Form)</span></label>
+          <input name="form_link" value="${isEdit ? escapeHtml(ev.form_link || '') : ''}" placeholder="https://forms.gle/...">
+        </div>
+        <p class="reg-form-note"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Either link is shown to a person once their registration for this event goes through — leave both blank to show nothing.</span></p>
         <span class="auth-error" id="eventFormError"></span>
         <div class="modal-actions">
           <button type="button" class="btn-secondary" id="cancelEventForm">Cancel</button>
@@ -232,7 +255,9 @@
         is_team_event: isTeam,
         team_min_size: isTeam ? parseInt(fd.get('team_min_size'), 10) || null : null,
         team_max_size: isTeam ? parseInt(fd.get('team_max_size'), 10) || null : null,
-        is_open: !!form.is_open.checked
+        registration_status: fd.get('registration_status'),
+        whatsapp_link: fd.get('whatsapp_link').trim() || null,
+        form_link: fd.get('form_link').trim() || null
       };
 
       submitBtn.disabled = true;
@@ -451,7 +476,7 @@
                 <h3>${escapeHtml(ev.name)}</h3>
                 <div class="event-group-meta">${escapeHtml(ev.venue || 'Venue TBA')} · ${fmtDate(ev.starts_at)}</div>
               </div>
-              <span class="pill ${ev.is_open ? 'pill-open' : 'pill-closed'}">${ev.is_open ? 'Open' : 'Closed'}</span>
+              ${statusPill(ev.registration_status)}
             </div>
             <div class="event-group-stats">
               <div class="event-group-stat"><div class="num">${countNum}</div><div class="label">${countLabel}</div></div>

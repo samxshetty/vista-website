@@ -24,6 +24,9 @@
 
   // slug (as used in data-event-id on the page) -> events.id (uuid)
   let eventSlugToId = {};
+  // slug -> full events row (id, whatsapp_link, form_link, ...) — used to
+  // show the post-registration "next steps" links.
+  let eventsBySlug = {};
   // slug -> { eventId, status, teamId, code, teamName, isLeader, finalized }
   let state = {};
 
@@ -34,11 +37,31 @@
     if (!slugs.length) return;
     const { data, error } = await sb
       .from('events')
-      .select('id, slug')
+      .select('id, slug, whatsapp_link, form_link')
       .in('slug', slugs);
     if (error) { console.error('loadEventIds error', error); return; }
     eventSlugToId = {};
-    data.forEach(e => { eventSlugToId[e.slug] = e.id; });
+    eventsBySlug = {};
+    data.forEach(e => { eventSlugToId[e.slug] = e.id; eventsBySlug[e.slug] = e; });
+  }
+
+  /* ---------- post-registration "next steps" (whatsapp/form links) ---------- */
+  function nextStepsHtml(slug) {
+    const ev = eventsBySlug[slug];
+    if (!ev || (!ev.whatsapp_link && !ev.form_link)) return '';
+    const rows = [
+      ev.whatsapp_link ? `<a class="btn-secondary" href="${escapeAttr(ev.whatsapp_link)}" target="_blank" rel="noopener">Join WhatsApp group</a>` : '',
+      ev.form_link ? `<a class="btn-secondary" href="${escapeAttr(ev.form_link)}" target="_blank" rel="noopener">Open form</a>` : ''
+    ].filter(Boolean).join('');
+    return `
+      <div class="reg-form-note" style="flex-direction:column; align-items:stretch; gap:10px;">
+        <span>One more thing before you go —</span>
+        <div class="modal-actions" style="margin-top:0;">${rows}</div>
+      </div>
+    `;
+  }
+  function escapeAttr(s) {
+    return String(s == null ? '' : s).replace(/"/g, '&quot;');
   }
 
   async function loadState() {
@@ -242,7 +265,7 @@
       if (error) { errorModal(error.message); return; }
       await loadState();
       refreshButtons();
-      successStep(`You're registered for ${name}. See you there!`);
+      successStep(`You're registered for ${name}. See you there!`, slug);
     });
   }
 
@@ -393,7 +416,7 @@
 
           await loadState();
           refreshButtons();
-          joinedStep(team.team_name, name);
+          joinedStep(team.team_name, name, slug);
         });
       });
     }
@@ -437,7 +460,7 @@
     document.getElementById('goManage').addEventListener('click', () => manageTeamStep(slug));
   }
 
-  function joinedStep(teamName, eventName) {
+  function joinedStep(teamName, eventName, slug) {
     openModal(`
       <button class="modal-close" data-close aria-label="Close">&times;</button>
       <div style="text-align:center;">
@@ -446,8 +469,9 @@
         </div>
         <h3 class="modal-title">You've joined "${teamName}"</h3>
         <p class="modal-sub">for ${eventName}. Your registration is pending until your team leader submits it.</p>
-        <button class="btn-primary" data-close style="width:100%">Done</button>
       </div>
+      ${slug ? nextStepsHtml(slug) : ''}
+      <button class="btn-primary" data-close style="width:100%; margin-top:14px;">Done</button>
     `);
   }
 
@@ -476,6 +500,7 @@
           ? `<div class="reg-form-note"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Submit once everyone's joined — you can't add members after that.</span></div>`
           : `<div class="reg-form-note"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Waiting on your team leader to submit the registration.</span></div>`
       }
+      ${nextStepsHtml(slug)}
       <span class="auth-error" id="manageError"></span>
       <div class="modal-actions">
         <button class="btn-secondary" data-close>Close</button>
@@ -509,10 +534,10 @@
     }
     await loadState();
     refreshButtons();
-    successStep(`Your team "${r.teamName}" is registered. See you there!`);
+    successStep(`Your team "${r.teamName}" is registered. See you there!`, slug);
   }
 
-  function successStep(msg) {
+  function successStep(msg, slug) {
     openModal(`
       <button class="modal-close" data-close aria-label="Close">&times;</button>
       <div style="text-align:center;">
@@ -521,8 +546,26 @@
         </div>
         <h3 class="modal-title">You're all set!</h3>
         <p class="modal-sub">${msg}</p>
-        <button class="btn-primary" data-close style="width:100%">Done</button>
       </div>
+      ${slug ? nextStepsHtml(slug) : ''}
+      <button class="btn-primary" data-close style="width:100%; margin-top:14px;">Done</button>
+    `);
+  }
+
+  /* Solo registration that's already done — nothing to "manage" like a
+     team, but re-opening shows the confirmation + next-steps links again. */
+  function registeredInfoStep(slug, name) {
+    openModal(`
+      <button class="modal-close" data-close aria-label="Close">&times;</button>
+      <div style="text-align:center;">
+        <div class="modal-success-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3 class="modal-title">You're registered</h3>
+        <p class="modal-sub">for ${name}. See you there!</p>
+      </div>
+      ${nextStepsHtml(slug)}
+      <button class="btn-primary" data-close style="width:100%; margin-top:14px;">Close</button>
     `);
   }
 
@@ -538,9 +581,12 @@
         const slug = btn.dataset.eventId;
         const existing = state[slug];
         if (existing) {
-          // Solo + already-finalized team registrations are done — nothing to manage.
-          if (existing.teamId && !existing.finalized) {
+          if (existing.teamId) {
+            // Pending or finalized team registration — reopen the team view (also shows the links).
             manageTeamStep(slug);
+          } else {
+            // Finalized solo registration — reopen the confirmation/links.
+            registeredInfoStep(slug, btn.dataset.eventName);
           }
           return;
         }

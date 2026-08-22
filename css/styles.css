@@ -726,6 +726,7 @@ div.profile-avatar{display:flex;}
 }
 .pill::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor;}
 .pill-open{color:var(--accent-2); background:rgba(143,233,201,0.12);}
+.pill-upcoming{color:#f0c674; background:rgba(240,198,116,0.14);}
 .pill-closed{color:#ff9a9a; background:rgba(255,110,110,0.12);}
 .pill-finalized{color:var(--accent-2); background:rgba(143,233,201,0.12);}
 .pill-pending{color:#f0c674; background:rgba(240,198,116,0.14);}
