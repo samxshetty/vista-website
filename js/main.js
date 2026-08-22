@@ -95,3 +95,12 @@ counters.forEach(c=>cio.observe(c));
     }
   }, {passive:true});
 })();
+
+(function(){
+  const paths = document.querySelectorAll('.hero-logo-anim .vista-stroke');
+  paths.forEach(p=>{
+    const len = Math.ceil(p.getTotalLength());
+    p.style.strokeDasharray = len;
+    p.style.strokeDashoffset = len;
+  });
+})();

@@ -165,6 +165,23 @@ nav{
   animation:heroFloat 6s ease-in-out infinite;
 }
 @keyframes heroFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+
+/* animated inline SVG logo on the homepage hero */
+.hero-logo-anim .vista-anim-svg{ width:100%; height:auto; display:block; overflow:visible; }
+.hero-logo-anim .vista-stroke{
+  fill:none; stroke:#ffffff; stroke-width:4.4;
+  stroke-linecap:round; stroke-linejoin:round;
+}
+.hero-logo-anim #heroSpine{ animation:vistaDraw 1.5s cubic-bezier(.6,0,.3,1) forwards; }
+.hero-logo-anim #heroLetV,
+.hero-logo-anim #heroLetI,
+.hero-logo-anim #heroLetT,
+.hero-logo-anim #heroLetA{ animation:vistaDraw 0.5s ease-out forwards; }
+.hero-logo-anim #heroLetV{ animation-delay:0.3s; }
+.hero-logo-anim #heroLetI{ animation-delay:0.45s; }
+.hero-logo-anim #heroLetT{ animation-delay:1.0s; }
+.hero-logo-anim #heroLetA{ animation-delay:1.25s; }
+@keyframes vistaDraw{ to{ stroke-dashoffset:0; } }
 .hero .hero-fullname{
   font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:clamp(.85rem,1.6vw,1.05rem);
   letter-spacing:0.08em; text-transform:uppercase; color:#7CFFE0; margin:0 auto 18px;
