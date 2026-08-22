@@ -162,9 +162,7 @@ nav{
 .hero-logo{
   width:min(680px,86vw); height:auto; margin:0 auto 28px; display:block;
   filter:drop-shadow(0 6px 40px rgba(0,0,0,0.25));
-  animation:heroFloat 6s ease-in-out infinite;
 }
-@keyframes heroFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
 
 /* animated inline SVG logo on the homepage hero */
 .hero-logo-anim .vista-anim-svg{ width:100%; height:auto; display:block; overflow:visible; }
