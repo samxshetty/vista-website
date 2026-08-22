@@ -41,6 +41,17 @@ counters.forEach(c=>cio.observe(c));
   if(!lightbox) return;
 
   function bigVersion(src){
+    // Team photos are served as small resized/compressed thumbnails via
+    // Supabase's image transform endpoint (…/render/image/public/…?width=300&
+    // height=300&resize=cover&quality=70) so the grid loads fast. For the
+    // lightbox we want a much larger version, so bump width/height instead
+    // of dropping the transform entirely (which would fall back to the
+    // original, sometimes multi-MB, upload).
+    if (/\/render\/image\/public\//.test(src)) {
+      return src
+        .replace(/([?&]width=)\d+/, '$11600')
+        .replace(/([?&]height=)\d+/, '$11600');
+    }
     return src.replace(/\/(\d+)\/(\d+)(\?.*)?$/, '/1600/1600$3');
   }
   function openLightbox(img){
