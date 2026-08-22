@@ -18,6 +18,20 @@
      'vista-password-recovery' -> user clicked a password-reset email link
    ========================================================================== */
 window.VistaAuth = (function () {
+  // Safety net: if a Supabase recovery link lands on any page other than
+  // /login/index.html (e.g. because the Supabase dashboard's allowed
+  // Redirect URLs still has an old/wrong entry and it fell back to the
+  // Site URL default), bounce to the login page with the same hash intact
+  // so the PASSWORD_RECOVERY handling below still gets a chance to run,
+  // instead of the token just sitting unused in the URL.
+  (function redirectRecoveryToLogin() {
+    if (!/type=recovery/.test(window.location.hash)) return;
+    if (/\/login\/index\.html$/.test(window.location.pathname)) return;
+    const loginBtn = document.querySelector('#navLoginBtn');
+    const loginHref = (loginBtn && (loginBtn.dataset.loginHref || loginBtn.getAttribute('href'))) || 'login/index.html';
+    window.location.replace(loginHref + window.location.hash);
+  })();
+
   let _session = null;
   let _profile = null; // row from public.profiles for the current user
 
@@ -234,43 +248,53 @@ window.VistaAuth = (function () {
   });
 })();
 
-/* Forgot password form — no automated reset email. Instead this builds a
-   pre-filled email (via a mailto: link) from the visitor's browser to the
-   VISTA team address, who reset the password manually from the Supabase
-   dashboard. Swap RESET_REQUEST_EMAIL below if that inbox ever changes. */
+/* Forgot password form — sends a real Supabase password-reset email.
+   Supabase emails the person a link back to ../login/index.html with a
+   recovery token; clicking it fires the PASSWORD_RECOVERY auth event
+   (handled below), which swaps the login card for a "set new password"
+   form. Submitting that calls sb.auth.updateUser({ password }), which
+   updates the password directly in Supabase — no manual reset needed. */
 (function () {
   const form = document.getElementById('forgotForm');
   if (!form) return;
 
-  const RESET_REQUEST_EMAIL = 'nn25ise182@nmamit.in';
   const noteEl = document.getElementById('forgotNote');
+  const errorEl = document.createElement('span');
+  errorEl.className = 'auth-error';
+  errorEl.id = 'forgotError';
+  form.appendChild(errorEl);
   const submitBtn = form.querySelector('.auth-submit');
 
-  form.addEventListener('submit', function (e) {
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
+    errorEl.classList.remove('show');
+    noteEl.classList.remove('show');
 
-    const name = form.name.value.trim();
-    const usn = form.usn.value.trim();
     const email = form.email.value.trim();
-    if (!name || !usn || !email) return;
+    if (!email) return;
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Opening email...';
+    submitBtn.textContent = 'Sending...';
 
-    const subject = `VISTA password reset request — ${usn}`;
-    const body =
-      `Hi VISTA team,\n\nPlease reset my VISTA account password.\n\n` +
-      `Name: ${name}\nUSN: ${usn}\nAccount email: ${email}\n\nThanks!`;
-
-    const mailtoLink =
-      `mailto:${RESET_REQUEST_EMAIL}` +
-      `?subject=${encodeURIComponent(subject)}` +
-      `&body=${encodeURIComponent(body)}`;
-
-    window.location.href = mailtoLink;
+    // redirectTo must be an allowed Redirect URL in the Supabase dashboard
+    // (Authentication -> URL Configuration), otherwise Supabase silently
+    // falls back to the project's default Site URL instead — which is what
+    // was happening here. Built relative to *this* page (not
+    // window.location.origin) so it still resolves correctly when the site
+    // is served from a subpath, e.g. GitHub Pages project sites
+    // (https://user.github.io/repo-name/...), not just a bare domain.
+    const redirectTo = new URL('../login/index.html', window.location.href).href;
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
 
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Send request';
+    submitBtn.textContent = 'Send reset link';
+
+    if (error) {
+      errorEl.textContent = error.message || 'Could not send the reset email. Please try again.';
+      errorEl.classList.add('show');
+      return;
+    }
+
     noteEl.classList.add('show');
     form.reset();
   });

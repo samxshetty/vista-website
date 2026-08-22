@@ -50,27 +50,19 @@
       </a>
       <span class="eyebrow-label mono">Reset access</span>
       <h1>Forgot your password?</h1>
-      <p class="auth-sub">Fill this in and we'll open an email to the VISTA team with your request — they'll reset it for you and get back to you.</p>
+      <p class="auth-sub">Enter your account email and we'll send you a link to reset your password.</p>
 
       <form class="auth-form" id="forgotForm" novalidate>
-        <div class="form-group">
-          <label for="fpName">Full name</label>
-          <input type="text" id="fpName" name="name" placeholder="Full name" autocomplete="name" required>
-        </div>
-        <div class="form-group">
-          <label for="fpUsn">USN</label>
-          <input type="text" id="fpUsn" name="usn" placeholder="NNM23IS000" autocomplete="off" required>
-        </div>
         <div class="form-group">
           <label for="fpEmail">Email</label>
           <input type="email" id="fpEmail" name="email" placeholder="you@nmamit.in" autocomplete="email" required>
         </div>
-        <button type="submit" class="auth-submit">Send request</button>
+        <button type="submit" class="auth-submit">Send reset link</button>
       </form>
 
       <div class="auth-note" id="forgotNote">
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/></svg>
-        <span>Your email app should have opened with the request filled in — hit send there to finish. If nothing opened, email <b>nn25ise182@nmamit.in</b> directly with your name, USN and account email.</span>
+        <span>If that email has an account, a reset link is on its way — check your inbox (and spam folder) and follow it to set a new password.</span>
       </div>
 
       <p class="auth-switch">Remembered it? <a href="../login/index.html">Back to login</a></p>
